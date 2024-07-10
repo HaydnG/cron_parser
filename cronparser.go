@@ -37,13 +37,14 @@ func main() {
 		return
 	}
 
+	// separate our argument into its separate values
 	cronValues := strings.Split(os.Args[1], " ")
 	if len(cronValues) < expectedCronArgs {
 		err = fmt.Errorf("insufficient args provided for the cron command. Expected: %d, got: %d", expectedCronArgs, len(cronValues))
 		return
 	}
 
-	// build our parsed cron values
+	// build our parsed cron values, passing in the acceptable ranged for each time definition
 	output, err := parseCronTimeField(0, 59, cronValues[0], "minute")
 	if err != nil {
 		return
@@ -82,6 +83,7 @@ func parseCronTimeField(start, end int, field, name string) (string, error) {
 	var intervals []string
 	var err error
 
+	// execute our parser ruleset, IF a comparitor is found
 	for i := range parser.Rules {
 		if parser.Rules[i].Comparitor(field) {
 			intervals, err = parser.Rules[i].Parse(start, end, field)
@@ -92,6 +94,7 @@ func parseCronTimeField(start, end int, field, name string) (string, error) {
 		}
 	}
 
+	// fallback to standalone integers that require `simple` parsing
 	if len(intervals) == 0 {
 		value, err := strconv.Atoi(field)
 		if err != nil {
@@ -104,5 +107,6 @@ func parseCronTimeField(start, end int, field, name string) (string, error) {
 		intervals = append(intervals, field)
 	}
 
+	// format our time intervals with the correct padding
 	return fmt.Sprintf("%-*s %s", textPadding, name, strings.Join(intervals, " ")), nil
 }
