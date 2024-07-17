@@ -7,6 +7,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"time"
 
 	"cronparser/parser"
 )
@@ -44,41 +45,77 @@ func main() {
 		return
 	}
 
+	var ok bool
 	// build our parsed cron values, passing in the acceptable ranged for each time definition
-	output, err := parseCronTimeField(0, 59, cronValues[0], "minute")
+	output, ok, err := parseCronTimeField(0, 59, cronValues[0], "minute")
 	if err != nil {
+		return
+	}
+	if !ok {
+		err = fmt.Errorf("%s field parsing validation failed, value: %s", "minute", cronValues[0])
 		return
 	}
 	fmt.Println(output)
 
-	output, err = parseCronTimeField(0, 23, cronValues[1], "hour")
+	output, ok, err = parseCronTimeField(0, 23, cronValues[1], "hour")
 	if err != nil {
+		return
+	}
+	if !ok {
+		err = fmt.Errorf("%s field parsing validation failed, value: %s", "hour", cronValues[1])
 		return
 	}
 	fmt.Println(output)
 
-	output, err = parseCronTimeField(1, 31, cronValues[2], "day of month")
+	output, ok, err = parseCronTimeField(1, 31, cronValues[2], "day of month")
 	if err != nil {
+		return
+	}
+	if !ok {
+		err = fmt.Errorf("%s field parsing validation failed, value: %s", "day of month", cronValues[2])
 		return
 	}
 	fmt.Println(output)
 
-	output, err = parseCronTimeField(1, 12, cronValues[3], "month")
+	output, ok, err = parseCronTimeField(1, 12, cronValues[3], "month")
 	if err != nil {
+		return
+	}
+	if !ok {
+		err = fmt.Errorf("%s field parsing validation failed, value: %s", "month", cronValues[3])
 		return
 	}
 	fmt.Println(output)
 
-	output, err = parseCronTimeField(0, 7, cronValues[4], "day of week")
+	output, ok, err = parseCronTimeField(0, 7, cronValues[4], "day of week")
 	if err != nil {
 		return
 	}
+	if !ok {
+		err = fmt.Errorf("%s field parsing validation failed, value: %s", "day of week", cronValues[4])
+		return
+	}
 	fmt.Println(output)
-	fmt.Printf("%-*s %s", textPadding, "command", cronValues[5])
+
+	now := time.Now()
+
+	output, ok, err = parseCronTimeField(now.Year(), now.Year()+20, cronValues[5], "year")
+	if err != nil {
+		return
+	}
+
+	commandStart := 6
+	if !ok {
+		commandStart = 5
+	} else {
+		fmt.Println(output)
+	}
+
+	fmt.Printf("%-*s %s", textPadding, "command", strings.Join(cronValues[commandStart:], " "))
 }
 
 // parseCronTimeField accepts valid start and end ranges, then validates and parsed the cron value
-func parseCronTimeField(start, end int, field, name string) (string, error) {
+func parseCronTimeField(start, end int, field, name string) (string, bool, error) {
 
 	var intervals []string
 	var err error
@@ -88,7 +125,7 @@ func parseCronTimeField(start, end int, field, name string) (string, error) {
 		if parser.Rules[i].Comparitor(field) {
 			intervals, err = parser.Rules[i].Parse(start, end, field)
 			if err != nil {
-				return "", fmt.Errorf("%s field parsing failed: %v", name, err)
+				return "", false, nil
 			}
 			break
 		}
@@ -98,15 +135,15 @@ func parseCronTimeField(start, end int, field, name string) (string, error) {
 	if len(intervals) == 0 {
 		value, err := strconv.Atoi(field)
 		if err != nil {
-			return "", fmt.Errorf("%s field parsing failed err: %v, field: %s", name, err, field)
+			return "", false, nil
 		}
 		if value < start || value > end {
-			return "", fmt.Errorf("%s field parsing failed err: outside expected range [%d, %d], field: %s", name, start, end, field)
+			return "", false, fmt.Errorf("%s field parsing failed err: outside expected range [%d, %d], field: %s", name, start, end, field)
 		}
 
 		intervals = append(intervals, field)
 	}
 
 	// format our time intervals with the correct padding
-	return fmt.Sprintf("%-*s %s", textPadding, name, strings.Join(intervals, " ")), nil
+	return fmt.Sprintf("%-*s %s", textPadding, name, strings.Join(intervals, " ")), true, nil
 }

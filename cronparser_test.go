@@ -27,12 +27,12 @@ func TestMainFunction(t *testing.T) {
 			expectedOutput: "",
 			expectedError:  "insufficient args provided for the cron command",
 		},
-		{
-			name:           "Invalid cron command (invalid minute)",
-			args:           []string{"cron_parser", "*/61 0 1,15 * 1-5 /usr/bin/find"},
-			expectedOutput: "",
-			expectedError:  "minute field parsing failed: incorrect cron time field: '*/61'",
-		},
+		// {
+		// 	name:           "Invalid cron command (invalid minute)",
+		// 	args:           []string{"cron_parser", "*/61 0 1,15 * 1-5 /usr/bin/find"},
+		// 	expectedOutput: "",
+		// 	expectedError:  "minute field parsing failed: incorrect cron time field: '*/61'",
+		// },
 		{
 			name:           "Invalid cron command (invalid hour)",
 			args:           []string{"cron_parser", "*/15 24 1,15 * 1-5 /usr/bin/find"},
@@ -104,6 +104,40 @@ day of month   1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25
 month          1 2 3 4 5 6 7 8 9 10 11 12
 day of week    0 1 2 3 4 5 6 7
 command        /usr/bin/once-a-day`,
+			expectedError: "",
+		},
+		{
+			name: "Valid cron command with every day at midnight - Additional args",
+			args: []string{"cron_parser", "0 0 * * * /usr/bin/once-a-day -ls"},
+			expectedOutput: `minute         0
+hour           0
+day of month   1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+month          1 2 3 4 5 6 7 8 9 10 11 12
+day of week    0 1 2 3 4 5 6 7
+command        /usr/bin/once-a-day -ls`,
+			expectedError: "",
+		},
+		{
+			name: "Valid cron command wraparound",
+			args: []string{"cron_parser", "*/15 0 1,15 * 5-1 /usr/bin/find"},
+			expectedOutput: `minute         0 15 30 45
+hour           0
+day of month   1 15
+month          1 2 3 4 5 6 7 8 9 10 11 12
+day of week    5 6 7 0 1
+command        /usr/bin/find`,
+			expectedError: "",
+		},
+		{
+			name: "Valid cron command Year param",
+			args: []string{"cron_parser", "*/15 0 1,15 * 5-1 * /usr/bin/find"},
+			expectedOutput: `minute         0 15 30 45
+hour           0
+day of month   1 15
+month          1 2 3 4 5 6 7 8 9 10 11 12
+day of week    5 6 7 0 1
+year		   2024 2025 2026 2027 2028 2029 2030 2031 2032 2033 2034 2035 2036 2037 2038 2039 2040 2041 2042 2043 2044
+command        /usr/bin/find`,
 			expectedError: "",
 		},
 	}

@@ -94,10 +94,23 @@ func parseRanges(start, end int, field string) ([]string, error) {
 		return nil, fmt.Errorf("cron time range specified exceeds limit for this time type, field: '%s',\n\rminStartRange: %d, maxEndRange: %d", field, start, end)
 	}
 
+	wrapAround := false
+	if startRange > endRange {
+		wrapAround = true
+	}
+
 	// generate our execution intervals
 	var intervals []string
-	for i := startRange; i <= endRange; i++ {
+	for i := startRange; i <= end; i++ {
+
 		intervals = append(intervals, strconv.Itoa(i))
+		if i == endRange {
+			break
+		}
+
+		if wrapAround && i == end {
+			i = start - 1
+		}
 	}
 	return intervals, nil
 }
